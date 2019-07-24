@@ -1,6 +1,9 @@
 let allEmployees;
 let filteredEmployees = [];
 let filterString = "";
+let numPages = 0;
+let currentPage = 0;
+// TO DO --> instead of location-reload, update table with new/updated/deleted data, changing arrays, global variables, etc.
 
 function httpGetAsync(theUrl, callback) {
     var xmlHttp = new XMLHttpRequest();
@@ -8,7 +11,7 @@ function httpGetAsync(theUrl, callback) {
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
             callback(xmlHttp.responseText);
     }
-    xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+    xmlHttp.open("GET", theUrl, true);
     xmlHttp.send(null);
 }
 
@@ -20,27 +23,59 @@ function initTable() {
     document.getElementsByTagName("body")[0].style.cursor = "wait"
     httpGetAsync(url, (response) => {
         allEmployees = (JSON.parse(response));
-        // filteredEmployees = Array.from(allEmployees);
+        numPages = Math.ceil(allEmployees.length / 50)
         filteredEmployees = [...allEmployees]
-        fillTable(allEmployees);
+        fillTable(allEmployees.slice(0, 50));
         document.getElementsByTagName("body")[0].style.cursor = "default"
 
     })
 }
 
 function fillTable(employees) {
-    console.log(employees.length);
 
-                // <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                // <li class="page-item"><a class="page-link" href="#">2</a></li>
-                // <li class="page-item"><a class="page-link" href="#">3</a></li>
-
-    // let numPages = Math.ceil(employees.length/50);
+    createPagination();
     for (let i = 0; i < employees.length; i++) {
         fillSingleRow(employees[i])
     }
-    console.log("exit");
 }
+
+function createPagination() {
+
+    document.getElementById("prevButton").setAttribute("onclick", "loadPrevious()");
+    document.getElementById("nextButton").setAttribute("onclick", "loadNext()");
+    document.getElementById("currentPage").innerText = "Page " + (currentPage + 1) + " of " + numPages;
+}
+
+function loadPrevious() {
+
+    if (currentPage > 0) {
+        let tbody = document.getElementsByTagName("tbody");
+        if (tbody.length > 0) {
+            tbody[0].parentNode.removeChild(tbody[0]);
+            document.getElementsByTagName("table")[0].appendChild(document.createElement("tbody"));
+        }
+        currentPage--;
+        document.getElementById("currentPage").innerText = "Page " + (currentPage + 1) + " of " + numPages;
+
+        fillTable(filteredEmployees.slice(currentPage * 50, currentPage * 50 + 50))
+    }
+}
+
+function loadNext() {
+
+    if (currentPage < numPages - 1) {
+        currentPage++;
+        let tbody = document.getElementsByTagName("tbody");
+        if (tbody.length > 0) {
+            tbody[0].parentNode.removeChild(tbody[0]);
+            document.getElementsByTagName("table")[0].appendChild(document.createElement("tbody"));
+        }
+        document.getElementById("currentPage").innerText = "Page " + (currentPage + 1) + " of " + numPages;
+
+        fillTable(filteredEmployees.slice(currentPage * 50, currentPage * 50 + 50))
+    }
+}
+
 
 function fillSingleRow(employeeData) {
     let newRow = document.createElement("tr");
@@ -50,7 +85,6 @@ function fillSingleRow(employeeData) {
     let ageCell = document.createElement("td");
     let actionsCell = document.createElement("td");
 
-    // if (employeeData["employee_name"].length > 10) /*  == "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ") */ return;
 
     nameCell.innerText = employeeData["employee_name"];
     salaryCell.innerText = employeeData["employee_salary"];
@@ -58,7 +92,7 @@ function fillSingleRow(employeeData) {
     photoCell.style.backgroundSize = "contain";
     photoCell.style.backgroundRepeat = "no-repeat";
     ageCell.innerText = employeeData["employee_age"];
-    actionsCell.appendChild(createActionButtons(employeeData["id"])); //apend
+    actionsCell.appendChild(createActionButtons(employeeData["id"]));
 
     newRow.appendChild(photoCell);
     newRow.appendChild(nameCell);
@@ -107,6 +141,13 @@ function createActionButtons(id) {
 function employeeDetailsModal(id) {
     let selectedEmployee;
     let url = "http://dummy.restapiexample.com/api/v1/employee/" + id;
+    let detailsModalBody = document.querySelectorAll("#detailsModal > div > div > div.modal-body")[0]
+    let detailsModalDialog = detailsModalBody.parentNode;
+    detailsModalDialog.removeChild(detailsModalBody);
+    let newDetailsModalBody = document.createElement("div");
+    newDetailsModalBody.className = "modal-body";
+    detailsModalDialog.insertBefore(newDetailsModalBody, detailsModalDialog.childNodes[4]);
+
     httpGetAsync(url, (response) => {
         selectedEmployee = (JSON.parse(response));
         fillDetailsModal(selectedEmployee);
@@ -115,17 +156,17 @@ function employeeDetailsModal(id) {
 
 function fillDetailsModal(employeeData) {
     document.getElementById("employeeDetails").innerText = "View: " + employeeData["employee_name"];
-    let modalBody = document.getElementsByClassName("modal-body")[0];
+    let modalBody = document.getElementsByClassName("modal-body")[1];
     let newRow = document.createElement("div");
     newRow.className = "row";
     let newColKey = document.createElement("div");
-    newColKey.classList = "col-lg-4 col-md-12";
+    newColKey.classList = "col-3 ";
     newColKey.innerText = "Name"
     newColKey.style.textAlign = "right";
     newColKey.style.fontWeight = "bold";
 
     let newColValue = document.createElement("div");
-    newColValue.classList = "col-lg-8 col-md-12";
+    newColValue.classList = "col-8 ";
     newColValue.innerText = employeeData["employee_name"];
     newRow.appendChild(newColKey);
     newRow.appendChild(newColValue);
@@ -135,12 +176,12 @@ function fillDetailsModal(employeeData) {
 
     newRow.className = "row";
     newColKey = document.createElement("div");
-    newColKey.classList = "col-lg-4 col-md-12";
+    newColKey.classList = "col-3 ";
     newColKey.innerText = "Age"
     newColKey.style.textAlign = "right";
     newColKey.style.fontWeight = "bold";
     newColValue = document.createElement("div");
-    newColValue.classList = "col-lg-8 col-md-12";
+    newColValue.classList = "col-8 ";
     newColValue.innerText = employeeData["employee_age"];
     newRow.appendChild(newColKey);
     newRow.appendChild(newColValue);
@@ -149,13 +190,13 @@ function fillDetailsModal(employeeData) {
 
     newRow.className = "row";
     newColKey = document.createElement("div");
-    newColKey.classList = "col-lg-4 col-md-12";
+    newColKey.classList = "col-3 ";
     newColKey.innerText = "Salary"
     newColKey.style.textAlign = "right";
     newColKey.style.fontWeight = "bold";
 
     newColValue = document.createElement("div");
-    newColValue.classList = "col-lg-8 col-md-12";
+    newColValue.classList = "col-8 ";
     newColValue.innerText = employeeData["employee_salary"];
     newRow.appendChild(newColKey);
     newRow.appendChild(newColValue);
@@ -169,7 +210,6 @@ function employeeUpdateModal(id) {
     let url = "http://dummy.restapiexample.com/api/v1/employee/" + id;
     httpGetAsync(url, (response) => {
         selectedEmployee = (JSON.parse(response));
-        console.log(selectedEmployee);
         fillUpdateModal(selectedEmployee);
         document.querySelectorAll("#updateModal > div > div > div.modal-footer > button.btn.btn-success")[0].setAttribute(`onclick`, `saveChanges(${id})`)
 
@@ -182,18 +222,15 @@ function fillUpdateModal(employeeData) {
     document.getElementById("updateName").value = employeeData["employee_name"];
     document.getElementById("updateAge").value = employeeData["employee_age"];
     document.getElementById("updateSalary").value = employeeData["employee_salary"]
-    console.log("salary: " + document.getElementById("updateSalary").getAttribute("value"));
 }
 
 function httpPutAsync(theUrl, callback, body) {
     var xmlHttp = new XMLHttpRequest();
-    console.log("url: " + theUrl);
-    console.log("JSON: " + body);
     xmlHttp.onreadystatechange = function () {
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
             callback(xmlHttp.responseText);
     }
-    xmlHttp.open("PUT", theUrl, true); // true for asynchronous 
+    xmlHttp.open("PUT", theUrl, true); 
     xmlHttp.send(body);
 }
 
@@ -203,14 +240,21 @@ function saveChanges(id) {
     let salary = document.getElementById("updateSalary").value;
     let name = document.getElementById("updateName").value;
 
+    if (!(age.match(/^[0-9]*$/g)) || !(salary.match(/^[0-9]*$/g))) {
+        document.getElementById("inputErrorUpdate").innerText = "Age and Salary must be a number!";
+        return;
+    } else if (name.length == 0) {
+        document.getElementById("inputErrorUpdate").innerText = "Need to add a name to the new worker!";
+        return;
+    } else {
+        stringJSON = createJSON(name, age, salary);
+        let url = "http://dummy.restapiexample.com/api/v1/update/" + id;
 
-    stringJSON = createJSON(name, age, salary);
-    let url = "http://dummy.restapiexample.com/api/v1/update/" + id;
 
-
-    httpPutAsync(url, (response) => {
-        console.log(JSON.parse(response))
-    }, stringJSON)
+        httpPutAsync(url, (response) => {
+            location - reload();
+        }, stringJSON)
+    }
 }
 
 
@@ -226,9 +270,8 @@ function employeeDeleteModal(id) {
 
 function deleteEmployee(id) {
     let url = "http://dummy.restapiexample.com/api/v1/delete/" + id;
-    console.log(url);
     httpDeleteAsync(url, (response) => {
-        console.log(JSON.parse(response))
+        location.reload();
     })
 }
 
@@ -238,240 +281,85 @@ function httpDeleteAsync(theUrl, callback) {
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
             callback(xmlHttp.responseText);
     }
-    xmlHttp.open("DELETE", theUrl, true); // true for asynchronous 
-    xmlHttp.send(null);
+    xmlHttp.open("DELETE", theUrl, true);
 }
 
 function addRecord() {
     let age = document.getElementById("createAge").value;
     let salary = document.getElementById("createSalary").value;
     let name = document.getElementById("createName").value;
-    // {"name":"test","salary":"123","age":"23"}
+    if (!(age.match(/^[0-9]*$/g)) || !(salary.match(/^[0-9]*$/g))) {
+        document.getElementById("inputErrorCreate").innerText = "Age and Salary must be a number!";
+        return;
+    } else if (name.length == 0) {
+        document.getElementById("inputErrorCreate").innerText = "Need to add a name to the new worker!";
+        return;
+    } else {
+        let stringJSON = createJSON(name, age, salary);
+        let url = "http://dummy.restapiexample.com/api/v1/create";
 
-    let stringJSON = createJSON(name, age, salary);
-    console.log(stringJSON);
-    let url = "http://dummy.restapiexample.com/api/v1/create";
 
-
-    httpPostAsync(url, (response) => {
-        console.log(JSON.parse(response))
-    }, stringJSON)
+        httpPostAsync(url, (response) => {
+            location.reload();
+        }, stringJSON)
+    }
 }
 
 function httpPostAsync(theUrl, callback, body) {
     var xmlHttp = new XMLHttpRequest();
-    console.log("url: " + theUrl);
-    console.log("JSON: " + body);
     xmlHttp.onreadystatechange = function () {
         if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
             callback(xmlHttp.responseText);
     }
-    xmlHttp.open("POST", theUrl, true); // true for asynchronous 
-    xmlHttp.send(body);
+    xmlHttp.open("POST", theUrl, true);
 }
 
 function filterTable(event) {
-    console.log("filter string: ", filterString)
-    let tbody = document.getElementsByTagName("tbody");
-    if (tbody.length > 0) {
-        tbody[0].parentNode.removeChild(tbody[0]);
-        document.getElementsByTagName("table")[0].appendChild(document.createElement("tbody"));
-    }
-    let pressedKey = ""
-   
-    if (event.key.match(/^[a-zA-Z0-9_]{1}$/g))  {
-        console.log(event.key);
-        pressedKey = event.key;
-        filterString = document.querySelectorAll("body > div.container > table > thead > tr:nth-child(2) > th > input")[0].value + pressedKey;
-    } else if (event.key == "Backspace"){
-        console.log("before Backspace: ", filterString)
-        // filteredEmployees = Array.from(allEmployees);
-        filteredEmployees = [...allEmployees]
-        filterString = filterString.substring(0, filterString.length-1)
-        console.log("after Backspace: ", filterString)
 
-    }
-    console.log(filterString)
+    setTimeout(() => {
+        let pressedKey = ""
 
-
-
-  
-    let longitud = filteredEmployees.length;
-    for (let i = 0; i < longitud; i++) {
-        if ((filteredEmployees[i]["employee_name"].indexOf(filterString) == -1) && (filteredEmployees[i]["employee_age"].indexOf(filterString) == -1) && (filteredEmployees[i]["employee_salary"].indexOf(filterString) == -1)) {
-            filteredEmployees.splice(i, 1);
-            longitud = filteredEmployees.length;
-            i--;
-        } else {
-            console.log(filteredEmployees[i]["employee_name"], filteredEmployees[i]["employee_name"].indexOf(filterString) ,  filteredEmployees[i]["employee_age"].indexOf(filterString), filteredEmployees[i]["employee_salary"].indexOf(filterString))
+        if (filterString.length > document.querySelectorAll("body > div.container > table > thead > tr:nth-child(2) > th > input")[0].value.length) {
+            filteredEmployees = [...allEmployees]
+            if (event.key == "Backspace") {
+                filterString = document.querySelectorAll("body > div.container > table > thead > tr:nth-child(2) > th > input")[0].value + " ";;
+            }
         }
-    }
-    fillTable(filteredEmployees);
+        if (event.key.match(/^[a-zA-Z0-9_]{1}$/g)) {
+            filterString = document.querySelectorAll("body > div.container > table > thead > tr:nth-child(2) > th > input")[0].value + pressedKey;
+        } else if (event.key == "Backspace") {
+            filteredEmployees = [...allEmployees];
+            filterString = filterString.substring(0, filterString.length - 1);
+        } else {
+            return;
+        }
+        let tbody = document.getElementsByTagName("tbody");
+        if (tbody.length > 0) {
+            tbody[0].parentNode.removeChild(tbody[0]);
+            document.getElementsByTagName("table")[0].appendChild(document.createElement("tbody"));
+        }
+
+
+
+
+
+        let longitud = filteredEmployees.length;
+        for (let i = 0; i < longitud; i++) {
+            if ((filteredEmployees[i]["employee_name"].indexOf(filterString) == -1) && (filteredEmployees[i]["employee_age"].indexOf(filterString) == -1) && (filteredEmployees[i]["employee_salary"].indexOf(filterString) == -1)) {
+                filteredEmployees.splice(i, 1);
+                longitud = filteredEmployees.length;
+                i--;
+            }
+        }
+        numPages = Math.ceil(filteredEmployees.length / 50)
+        currentPage = 0;
+        fillTable(filteredEmployees.slice(0, 50));
+
+    }, 1000);
 
 }
 
-/* 
 
-TestApp = angular.module('TestApp', ['TestApp.controllers', 'smart-table', 'ui.bootstrap']);
-
-angular.module('TestApp.controllers', []).controller('testController', ['$scope', '$http', '$uibModal', function ($scope, $http, $modal) {
-    $scope.loading = false;
-    var modalInstance = null;
-
-    $scope.getData = function () {
-        $scope.loading = true;
-        $http.get("/demos/api/v1/employees")
-            .then(function (response) {
-                $scope.employees = response.data;
-                $scope.loading = false;
-            });
-    }
-
-    $scope.viewRecord = function (id) {
-        if (id > 0) {
-            $http.get("/demos/api/v1/employees?id=" + id)
-                .then(function (response) {
-                    modalInstance = $modal.open({
-                        animation: false,
-                        templateUrl: 'view/view_record.html',
-                        controller: 'empViewCtrl',
-                        scope: $scope,
-                        size: '',
-                        resolve: {
-                            record: function () {
-                                return response.data;
-                            }
-                        }
-                    });
-                });
-
-        }
-
-
-    }
-
-    $scope.addRecord = function () {
-        modalInstance = $modal.open({
-            animation: false,
-            templateUrl: 'view/add_record.html',
-            controller: 'addEmpCtrl',
-            scope: $scope,
-            size: '',
-            resolve: {}
-        });
-
-    }
-
-    $scope.editRecord = function (id) {
-        if (id > 0) {
-            $http.get("/demos/api/v1/employees/?id=" + id)
-                .then(function (response) {
-                    modalInstance = $modal.open({
-                        animation: false,
-                        templateUrl: 'view/update_record.html',
-                        controller: 'updateEmpCtrl',
-                        scope: $scope,
-                        size: '',
-                        resolve: {
-                            record: function () {
-                                return response.data;
-                            }
-                        }
-                    });
-                });
-        }
-
-    }
-
-    $scope.cancelModal = function () {
-        modalInstance.dismiss('cancel');
-    }
-
-    $scope.saveRecord = function (params) {
-        console.log(params);
-        $http.post("/demos/api/v1/employees", params)
-            .then(function (response) {
-                console.log(response);
-                $scope.getData();
-            });
-    }
-
-    $scope.updateRecord = function (params) {
-        $http.put("/demos/api/v1/employees/?id=" + params.id, params)
-            .then(function (response) {
-                console.log(response);
-                $scope.getData();
-            });
-    }
-    $scope.deletRecord = function (id) {
-        if (confirm('Are you sure you want to delete this?')) {
-            $http.delete("/demos/api/v1/employees/?id=" + id)
-                .then(function (response) {
-                    console.log(response);
-                });
-        }
-
-    }
-    $scope.getData();
-}]);
-
-TestApp.controller('empViewCtrl', ['$scope', '$http', 'record', function ($scope, $http, record) {
-    function init() {
-        $scope.employee = record[0];
-    }
-    init();
-
-}]);
-
-TestApp.controller('addEmpCtrl', ['$scope', '$http', function ($scope, $http) {
-    $scope.saveEmp = function () {
-        $scope.datas = {};
-
-        if (!angular.isDefined($scope.employee_name) || $scope.employee_name === '') {
-            alert('employee name is empty');
-            return;
-        } else if (!angular.isDefined($scope.employee_age) || $scope.employee_age === '') {
-            alert('employee age is empty');
-            return;
-        } else if (!angular.isDefined($scope.employee_salary) || $scope.employee_salary === '') {
-            alert('employee salary is empty');
-            return;
-        } else {
-            $scope.datas.employee_name = $scope.employee_name;
-            $scope.datas.employee_age = $scope.employee_age;
-            $scope.datas.employee_salary = $scope.employee_salary;
-            console.log($scope.datas);
-        }
-        $scope.cancelModal();
-        $scope.saveRecord($scope.datas);
-    };
-
-}]);
-
-TestApp.controller('updateEmpCtrl', ['$scope', '$http', 'record', function ($scope, $http, record) {
-    $scope.employee = {};
-
-    function init() {
-        $scope.employee.employee_name = record[0].employee_name;
-        $scope.employee.employee_age = parseInt(record[0].employee_age);
-        $scope.employee.employee_salary = parseInt(record[0].employee_salary);
-
-        $scope.employee.id = parseInt(record[0].id);
-    }
-    $scope.updateEmp = function () {
-        $scope.cancelModal();
-        if (!angular.isDefined($scope.employee.employee_name) || $scope.employee.employee_name === '') {
-            alert('employee name is empty');
-            return;
-        } else if (!angular.isDefined($scope.employee.employee_age) || $scope.employee.employee_age === '') {
-            alert('employee age is empty');
-            return;
-        } else if (!angular.isDefined($scope.employee.employee_salary) || $scope.employee.employee_salary === '') {
-            alert('employee salary is empty');
-            return;
-        }
-        $scope.updateRecord($scope.employee);
-    }
-    init();
-
-}]); */
+function preventCloseModal(event) {
+    event.preventDefault();
+}

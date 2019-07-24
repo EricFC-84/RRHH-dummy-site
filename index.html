@@ -23,6 +23,12 @@
                 <button class="btn btn-info float-right my-4" data-toggle="modal" data-target="#createModal">+ Add New Employee</button>
             </div>
         </div>
+        <ul class="pagination">
+                <li class="page-item" id="prevButton"><a class="page-link" href="#">Previous</a></li>
+                <li class="page-item" ><a class="page-link" id="currentPage">Page # of # </a></li>
+                
+                <li class="page-item" id="nextButton"><a class="page-link disabled" href="#" >Next</a></li>
+              </ul>
         <table class="table table-responsive table-striped">
             <thead>
                 <tr>
@@ -35,7 +41,7 @@
                 <tr>
 
                     <th colspan="5">
-                        <input placeholder="global search" autocomplete="off" name="search" class="form-control" type="search" onkeydown="filterTable(event)"/>
+                        <input placeholder="global search" autocomplete="off" name="search" class="form-control" type="text" onkeydown="filterTable(event)"/>
                     </th>
                     <!--  <form action="" class="">
                             <input type="search" class="form-control" placeholder="global search"
@@ -88,10 +94,11 @@
                                 <input type="text" class="form-control" id="createSalary">
                             </div>
                         </div>
+                        <div id="inputErrorCreate"></div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-success" data-dismiss="modal" onclick="addRecord()">Save</button>
+                    <button type="button" class="btn btn-success" onclick="addRecord()">Save</button>
                     <button type="button" class="btn btn-info" data-dismiss="modal">Close</button>
 
                 </div>
@@ -150,10 +157,12 @@
                                 <input type="text" class="form-control" id="updateSalary">
                             </div>
                         </div>
+                        <div id="inputErrorUpdate"></div>
+
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-success" data-dismiss="modal">Save</button>
+                    <button type="button" class="btn btn-success">Save</button>
                     <button type="button" class="btn btn-info" data-dismiss="modal">Close</button>
 
                 </div>
